@@ -8,15 +8,18 @@
   </information>
   <resources>
     <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="ADTi_DIN_Reto_CRUD.jar" size="2535264" download="eager" />
+    <jar href="ADTi_DIN_Reto_CRUD.jar" size="4634801" download="eager" />
+    <jar href="lib\bson-4.11.1.jar" size="511358" download="eager" />
     <jar href="lib\commons-dbcp2-2.13.0.jar" size="221765" download="eager" />
     <jar href="lib\commons-logging-1.3.5.jar" size="73737" download="eager" />
     <jar href="lib\commons-pool2-2.12.1.jar" size="152289" download="eager" />
     <jar href="lib\hamcrest-junit-2.0.0.0.jar" size="14347" download="eager" />
     <jar href="lib\java-hamcrest-2.0.0.0.jar" size="112929" download="eager" />
+    <jar href="lib\mongodb-driver-core-4.11.1.jar" size="1670639" download="eager" />
+    <jar href="lib\mongodb-driver-sync-4.11.1.jar" size="151811" download="eager" />
     <jar href="lib\mysql-connector-java-8.0.15.jar" size="2134905" download="eager" />
-    <jar href="lib\testfx-core-4.0.13-alpha.jar" size="202932" download="eager" />
-    <jar href="lib\testfx-junit-4.0.13-alpha.jar" size="9871" download="eager" />
+    <jar href="lib\testfx-core-4.0.18.jar" size="213327" download="eager" />
+    <jar href="lib\testfx-junit-4.0.18.jar" size="9178" download="eager" />
   </resources>
   <applet-desc  width="800" height="600" main-class="com.javafx.main.NoJavaFXFallback"  name="ADTi_DIN_Reto_CRUD" >
     <param name="requiredFXVersion" value="8.0+"/>

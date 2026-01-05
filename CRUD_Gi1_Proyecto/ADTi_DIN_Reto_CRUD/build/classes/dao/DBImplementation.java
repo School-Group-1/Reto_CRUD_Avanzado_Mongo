@@ -1,17 +1,22 @@
 package dao;
 
+import com.mongodb.client.MongoCollection;
+import config.MongoConnection;
 import exception.OurException;
 import exception.ErrorMessages;
 import pool.ConnectionPool;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import model.Admin;
 import model.Gender;
 import model.LoggedProfile;
 import model.Profile;
 import model.User;
+import org.bson.Document;
 import pool.ConnectionThread;
 
 /**
@@ -139,7 +144,7 @@ public class DBImplementation implements ModelDAO
                 String genderValue = rs.getString("U_GENDER");
                 Gender gender = genderValue != null ? Gender.valueOf(genderValue) : Gender.OTHER;
                 User user = new User(
-                        rs.getInt("P_ID"),
+                        rs.getString("P_ID"),
                         rs.getString("P_EMAIL"),
                         rs.getString("P_USERNAME"),
                         rs.getString("P_PASSWORD"),
@@ -181,13 +186,13 @@ public class DBImplementation implements ModelDAO
             stmtProfile.setString(2, user.getName());
             stmtProfile.setString(3, user.getLastname());
             stmtProfile.setString(4, user.getTelephone());
-            stmtProfile.setInt(5, user.getId());
+            stmtProfile.setString(5, user.getId());
 
             int profileUpdated = stmtProfile.executeUpdate();
 
             stmtUser.setString(1, user.getGender().name());
             stmtUser.setString(2, user.getCard());
-            stmtUser.setInt(3, user.getId());
+            stmtUser.setString(3, user.getId());
 
             int userUpdated = stmtUser.executeUpdate();
 
@@ -241,54 +246,57 @@ public class DBImplementation implements ModelDAO
      * @return the authenticated user's Profile object (User or Admin) if credentials are valid, null otherwise
      * @throws OurException if the authentication process fails due to SQL errors or data retrieval issues
      */
-    private Profile loginProfile(Connection con, String credential, String password) throws OurException
+    private Profile loginProfile(String credential, String password) throws OurException
     {
-        try (PreparedStatement stmt = con.prepareStatement(SQLSELECT_LOGIN))
+        try
         {
-            stmt.setString(1, credential);
-            stmt.setString(2, credential);
-            stmt.setString(3, password);
-
-            try (ResultSet rs = stmt.executeQuery())
-            {
-                if (rs.next())
-                {
-                    String gender = rs.getString("U_GENDER");
-                    String admin = rs.getString("A_CURRENT_ACCOUNT");
-
-                    if (gender != null)
-                    {
-                        return new User(
-                                rs.getInt("P_ID"),
-                                rs.getString("P_EMAIL"),
-                                rs.getString("P_USERNAME"),
-                                rs.getString("P_PASSWORD"),
-                                rs.getString("P_NAME"),
-                                rs.getString("P_LASTNAME"),
-                                rs.getString("P_TELEPHONE"),
-                                Gender.valueOf(gender),
-                                rs.getString("U_CARD")
-                        );
-                    }
-                    else if (admin != null)
-                    {
-                        return new Admin(
-                                rs.getInt("P_ID"),
-                                rs.getString("P_EMAIL"),
-                                rs.getString("P_USERNAME"),
-                                rs.getString("P_PASSWORD"),
-                                rs.getString("P_NAME"),
-                                rs.getString("P_LASTNAME"),
-                                rs.getString("P_TELEPHONE"),
-                                admin
-                        );
-                    }
-                }
-
-                return null;
+            MongoCollection<Document> users =
+                    MongoConnection.getUsersCollection();
+            
+            Document query = new Document("$and", Arrays.asList(
+                    new Document("$or", Arrays.asList(
+                            new Document("P_EMAIL", credential),
+                            new Document("P_USERNAME", credential)
+                    )),
+                    new Document("P_PASSWORD", password)
+            ));
+            
+            Document doc = users.find(query).first();
+            if (doc == null) return null;
+            
+            String gender = doc.getString("U_GENDER");
+            String admin = doc.getString("A_CURRENT_ACCOUNT");
+            
+            String pId = doc.getObjectId("_id").toHexString();
+            
+            if (gender != null) {
+                return new User(
+                    pId,
+                    doc.getString("P_EMAIL"),
+                    doc.getString("P_USERNAME"),
+                    doc.getString("P_PASSWORD"),
+                    doc.getString("P_NAME"),
+                    doc.getString("P_LASTNAME"),
+                    doc.getString("P_TELEPHONE"),
+                    Gender.valueOf(gender),
+                    doc.getString("U_CARD")
+                );
+            } else if (admin != null) {
+                return new Admin(
+                    pId,
+                    doc.getString("P_EMAIL"),
+                    doc.getString("P_USERNAME"),
+                    doc.getString("P_PASSWORD"),
+                    doc.getString("P_NAME"),
+                    doc.getString("P_LASTNAME"),
+                    doc.getString("P_TELEPHONE"),
+                    admin
+                );
             }
-        }
-        catch (SQLException ex)
+            
+            return null;
+        } 
+        catch (Exception ex) 
         {
             throw new OurException(ErrorMessages.LOGIN);
         }
@@ -415,19 +423,14 @@ public class DBImplementation implements ModelDAO
     @Override
     public Profile login(String credential, String password) throws OurException
     {
-        try (Connection con = ConnectionPool.getConnection())
+        Profile profile = loginProfile(credential, password);
+        
+        if (profile != null)
         {
-            Profile profile = loginProfile(con, credential, password);
-            if (profile != null)
-            {
-                LoggedProfile.getInstance().setProfile(profile);
-            }
-            return profile;
+            LoggedProfile.getInstance().setProfile(profile);
         }
-        catch (Exception ex)
-        {
-            throw new OurException(ErrorMessages.LOGIN);
-        }
+        
+        return profile;
     }
 
     /**
@@ -461,14 +464,14 @@ public class DBImplementation implements ModelDAO
                 throw new OurException("Username already exists");
             }
 
-            int id = insert(con, user);
+            /*int id = insert(con, user);
 
             if (id == -1)
             {
                 throw new OurException(ErrorMessages.REGISTER_USER);
             }
 
-            user.setId(id);
+            user.setId(id);*/
 
             return user;
         }
