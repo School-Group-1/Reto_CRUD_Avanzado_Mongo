@@ -8,7 +8,7 @@
   </information>
   <resources>
     <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="ADTi_DIN_Reto_CRUD.jar" size="4634801" download="eager" />
+    <jar href="ADTi_DIN_Reto_CRUD.jar" size="4634860" download="eager" />
     <jar href="lib\bson-4.11.1.jar" size="511358" download="eager" />
     <jar href="lib\commons-dbcp2-2.13.0.jar" size="221765" download="eager" />
     <jar href="lib\commons-logging-1.3.5.jar" size="73737" download="eager" />

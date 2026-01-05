@@ -224,11 +224,11 @@ public class DBImplementation implements ModelDAO
      * @return true if the deletion was successful, false if no user was found with the specified ID
      * @throws OurException if the deletion operation fails due to SQL errors or database constraints
      */
-    private boolean delete(Connection con, int userId) throws OurException
+    private boolean delete(Connection con, String userId) throws OurException
     {
         try (PreparedStatement stmt = con.prepareStatement(SQLDELETE_USER))
         {
-            stmt.setInt(1, userId);
+            stmt.setString(1, userId);
             return stmt.executeUpdate() > 0;
         }
         catch (SQLException ex)
@@ -545,7 +545,7 @@ public class DBImplementation implements ModelDAO
      * @throws OurException if the deletion operation fails due to database constraints, referential integrity issues, or data access errors
      */
     @Override
-    public boolean deleteUser(int id) throws OurException
+    public boolean deleteUser(String id) throws OurException
     {
         ConnectionThread thread = new ConnectionThread(delay);
         thread.start();
