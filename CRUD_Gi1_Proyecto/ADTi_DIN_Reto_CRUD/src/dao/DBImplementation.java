@@ -63,65 +63,29 @@ public class DBImplementation implements ModelDAO
      * @return the generated user ID if insertion is successful, -1 otherwise
      * @throws OurException if the insertion fails due to SQL errors, constraint violations, or transaction issues
      */
-    private int insert(Connection con, User user) throws OurException
+    private String insert(User user) throws OurException
     {
-        int id = -1;
+        try {
+            MongoCollection<Document> users = MongoConnection.getUsersCollection();
 
-        try (
-                PreparedStatement stmtProfile = con.prepareStatement(SQLINSERT_PROFILE, Statement.RETURN_GENERATED_KEYS);
-                PreparedStatement stmtUser = con.prepareStatement(SQLINSERT_USER))
-        {
-            con.setAutoCommit(false);
+            Document doc = new Document()
+                    .append("P_EMAIL", user.getEmail())
+                    .append("P_USERNAME", user.getUsername())
+                    .append("P_PASSWORD", user.getPassword())
+                    .append("P_NAME", user.getName())
+                    .append("P_LASTNAME", user.getLastname())
+                    .append("P_TELEPHONE", user.getTelephone())
+                    .append("U_GENDER", user.getGender().name())
+                    .append("U_CARD", user.getCard());
 
-            stmtProfile.setString(1, user.getEmail());
-            stmtProfile.setString(2, user.getUsername());
-            stmtProfile.setString(3, user.getPassword());
-            stmtProfile.setString(4, user.getName());
-            stmtProfile.setString(5, user.getLastname());
-            stmtProfile.setString(6, user.getTelephone());
+            users.insertOne(doc);
 
-            int profileInserted = stmtProfile.executeUpdate();
+            // MongoDB genera automáticamente el id
+            return doc.getObjectId("_id").toHexString();
 
-            if (profileInserted == 0)
-            {
-                throw new SQLException("Insert failed: profile not created.");
-            }
-
-            try (ResultSet generatedKeys = stmtProfile.getGeneratedKeys())
-            {
-                if (generatedKeys.next())
-                {
-                    id = generatedKeys.getInt(1);
-
-                    stmtUser.setInt(1, id);
-                    stmtUser.setString(2, user.getGender().name());
-                    stmtUser.setString(3, user.getCard());
-
-                    int userInserted = stmtUser.executeUpdate();
-
-                    if (userInserted == 0)
-                    {
-                        throw new SQLException("Insert failed: user not created.");
-                    }
-
-                    con.commit();
-                }
-                else
-                {
-                    throw new SQLException("Insert failed: no generated key returned.");
-                }
-            }
-        }
-        catch (SQLException ex)
-        {
-            rollBack(con);
+        } catch (Exception ex) {
             throw new OurException(ErrorMessages.REGISTER_USER);
-        } finally
-        {
-            resetAutoCommit(con);
         }
-
-        return id;
     }
 
     /**
@@ -311,37 +275,30 @@ public class DBImplementation implements ModelDAO
      * @return a HashMap indicating which credentials already exist with keys "email" and "username" and boolean values
      * @throws OurException if the verification process fails due to SQL errors
      */
-    private HashMap<String, Boolean> checkCredentialsExistence(Connection con, String email, String username) throws OurException
+    private HashMap<String, Boolean> checkCredentialsExistence(String email, String username) throws OurException
     {
         HashMap<String, Boolean> exists = new HashMap<>();
         exists.put("email", false);
         exists.put("username", false);
 
-        try (PreparedStatement stmt = con.prepareStatement(SQLCHECK_CREDENTIALS))
-        {
-            stmt.setString(1, email);
-            stmt.setString(2, username);
+        try {
+            MongoCollection<Document> users = MongoConnection.getUsersCollection();
 
-            try (ResultSet rs = stmt.executeQuery())
-            {
-                while (rs.next())
-                {
-                    if (email.equals(rs.getString("P_EMAIL")))
-                    {
-                        exists.put("email", true);
-                    }
-                    if (username.equals(rs.getString("P_USERNAME")))
-                    {
-                        exists.put("username", true);
-                    }
-                }
+            // email
+            if (users.find(new Document("P_EMAIL", email)).first() != null) {
+                exists.put("email", true);
             }
-        }
-        catch (SQLException ex)
-        {
+
+            // username
+            if (users.find(new Document("P_USERNAME", username)).first() != null) {
+                exists.put("username", true);
+            }
+
+            return exists;
+
+        } catch (Exception ex) {
             throw new OurException(ErrorMessages.VERIFY_CREDENTIALS);
         }
-        return exists;
     }
 
     /**
@@ -441,47 +398,27 @@ public class DBImplementation implements ModelDAO
      * @throws OurException if registration fails due to duplicate credentials, database constraints, or system errors
      */
     @Override
-    public User register(User user) throws OurException
-    {
-        ConnectionThread thread = new ConnectionThread(delay);
-        thread.start();
+    public User register(User user) throws OurException {
 
-        try
-        {
-            Connection con = waitForConnection(thread);
-            Map<String, Boolean> existing = checkCredentialsExistence(con, user.getEmail(), user.getUsername());
+        Map<String, Boolean> existing =
+                checkCredentialsExistence(user.getEmail(), user.getUsername());
 
-            if (existing.get("email") && existing.get("username"))
-            {
-                throw new OurException("Both email and username already exist");
-            }
-            else if (existing.get("email"))
-            {
-                throw new OurException("Email already exists");
-            }
-            else if (existing.get("username"))
-            {
-                throw new OurException("Username already exists");
-            }
-
-            /*int id = insert(con, user);
-
-            if (id == -1)
-            {
-                throw new OurException(ErrorMessages.REGISTER_USER);
-            }
-
-            user.setId(id);*/
-
-            return user;
+        if (existing.get("email") && existing.get("username")) {
+            throw new OurException("Both email and username already exist");
+        } else if (existing.get("email")) {
+            throw new OurException("Email already exists");
+        } else if (existing.get("username")) {
+            throw new OurException("Username already exists");
         }
-        catch (InterruptedException ex)
-        {
+
+        String id = insert(user);
+
+        if (id == null) {
             throw new OurException(ErrorMessages.REGISTER_USER);
-        } finally
-        {
-            thread.releaseConnection();
         }
+
+        user.setId(id);
+        return user;
     }
 
     /**
