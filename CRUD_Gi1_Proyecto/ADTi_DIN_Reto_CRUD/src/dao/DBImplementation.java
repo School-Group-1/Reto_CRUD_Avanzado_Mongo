@@ -1,6 +1,7 @@
 package dao;
 
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
 import config.MongoConnection;
 import exception.OurException;
 import exception.ErrorMessages;
@@ -430,20 +431,36 @@ public class DBImplementation implements ModelDAO
     @Override
     public ArrayList<User> getUsers() throws OurException
     {
-        ConnectionThread thread = new ConnectionThread(delay);
-        thread.start();
-
         try
         {
-            Connection con = waitForConnection(thread);
-            return selectUsers(con);
+            MongoCollection<Document> collection = MongoConnection.getUsersCollection();
+            ArrayList<User> users = new ArrayList<>();
+
+            for (Document doc : collection.find(Filters.exists("U_GENDER")))
+            {
+                String genderValue = doc.getString("U_GENDER");
+                Gender gender = genderValue != null ? Gender.valueOf(genderValue) : Gender.OTHER;
+
+                User user = new User(
+                        doc.getObjectId("_id").toHexString(),
+                        doc.getString("P_EMAIL"),
+                        doc.getString("P_USERNAME"),
+                        doc.getString("P_PASSWORD"),
+                        doc.getString("P_NAME"),
+                        doc.getString("P_LASTNAME"),
+                        doc.getString("P_TELEPHONE"),
+                        gender,
+                        doc.getString("U_CARD")
+                );
+
+                users.add(user);
+            }
+
+            return users;
         }
-        catch (InterruptedException ex)
+        catch (Exception ex)
         {
             throw new OurException(ErrorMessages.GET_USERS);
-        } finally
-        {
-            thread.releaseConnection();
         }
     }
 
