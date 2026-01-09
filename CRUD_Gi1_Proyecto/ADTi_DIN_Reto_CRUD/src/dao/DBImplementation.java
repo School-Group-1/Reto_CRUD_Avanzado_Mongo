@@ -2,6 +2,7 @@ package dao;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.UpdateResult;
 import config.MongoConnection;
 import exception.OurException;
 import exception.ErrorMessages;
@@ -18,6 +19,7 @@ import model.LoggedProfile;
 import model.Profile;
 import model.User;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import pool.ConnectionThread;
 
 /**
@@ -137,49 +139,29 @@ public class DBImplementation implements ModelDAO
      * @return true if the update operation was successful, false otherwise
      * @throws OurException if the update fails due to SQL errors, constraint violations, or transaction issues
      */
-    private boolean update(Connection con, User user) throws OurException
-    {
-        boolean success = false;
+    private boolean update(User user, MongoCollection<Document> collection) throws OurException {
 
-        try (
-                PreparedStatement stmtProfile = con.prepareStatement(SQLUPDATE_PROFILE);
-                PreparedStatement stmtUser = con.prepareStatement(SQLUPDATE_USER))
-        {
-            con.setAutoCommit(false);
+        Document filter = new Document("_id", new ObjectId(user.getId()));
 
-            stmtProfile.setString(1, user.getPassword());
-            stmtProfile.setString(2, user.getName());
-            stmtProfile.setString(3, user.getLastname());
-            stmtProfile.setString(4, user.getTelephone());
-            stmtProfile.setString(5, user.getId());
+        Document updateFields = new Document()
+                .append("P_PASSWORD", user.getPassword())
+                .append("P_NAME", user.getName())
+                .append("P_LASTNAME", user.getLastname())
+                .append("P_TELEPHONE", user.getTelephone())
+                .append("U_GENDER", user.getGender().name())
+                .append("U_CARD", user.getCard());
 
-            int profileUpdated = stmtProfile.executeUpdate();
+        Document update = new Document("$set", updateFields);
 
-            stmtUser.setString(1, user.getGender().name());
-            stmtUser.setString(2, user.getCard());
-            stmtUser.setString(3, user.getId());
+        UpdateResult result = collection.updateOne(filter, update);
 
-            int userUpdated = stmtUser.executeUpdate();
-
-            if (profileUpdated == 0 || userUpdated == 0)
-            {
-                throw new SQLException(ErrorMessages.UPDATE_USER);
-            }
-
-            con.commit();
-            success = true;
-        }
-        catch (SQLException ex)
-        {
-            rollBack(con);
+        if (result.getMatchedCount() == 0) {
             throw new OurException(ErrorMessages.UPDATE_USER);
-        } finally
-        {
-            resetAutoCommit(con);
         }
 
-        return success;
+        return result.getModifiedCount() > 0;
     }
+
 
     /**
      * Deletes a user from the database by their unique identifier. This method removes a user record from the system based on the provided user ID.
@@ -472,24 +454,15 @@ public class DBImplementation implements ModelDAO
      * @throws OurException if the update operation fails due to validation errors, database constraints violations, or data access issues
      */
     @Override
-    public boolean updateUser(User user) throws OurException
-    {
-        ConnectionThread thread = new ConnectionThread(delay);
-        thread.start();
-
-        try
-        {
-            Connection con = waitForConnection(thread);
-            return update(con, user);
-        }
-        catch (InterruptedException ex)
-        {
+    public boolean updateUser(User user) throws OurException {
+        try {
+            MongoCollection<Document> collection = MongoConnection.getUsersCollection();
+            return update(user, collection);
+        } catch (Exception e) {
             throw new OurException(ErrorMessages.UPDATE_USER);
-        } finally
-        {
-            thread.releaseConnection();
         }
     }
+
 
     /**
      * Deletes a user from the system by their unique identifier. This method permanently removes a user record from the database based on the provided user ID.
