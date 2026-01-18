@@ -1,17 +1,17 @@
 package dao;
 
+import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import config.MongoConnection;
 import exception.OurException;
 import exception.ErrorMessages;
-import pool.ConnectionPool;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import model.Admin;
 import model.Gender;
@@ -32,36 +32,9 @@ import pool.ConnectionThread;
 public class DBImplementation implements ModelDAO
 {
 
-    private final int delay = 30;
-
-    /**
-     * SQL Queries: INSERTS
-     */
-    private final String SQLINSERT_PROFILE = "INSERT INTO db_profile (P_EMAIL, P_USERNAME, P_PASSWORD, P_NAME, P_LASTNAME, P_TELEPHONE) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String SQLINSERT_USER = "INSERT INTO db_user (U_ID, U_GENDER, U_CARD) VALUES (?, ?, ?)";
-
-    /**
-     * SQL Queries: SELECTS
-     */
-    private final String SQLSELECT_USERS = "SELECT p.P_ID, p.P_EMAIL, p.P_USERNAME, p.P_PASSWORD, p.P_NAME, p.P_LASTNAME, p.P_TELEPHONE, u.U_GENDER, u.U_CARD FROM db_profile p JOIN db_user u ON p.P_ID = u.U_ID";
-    private final String SQLCHECK_CREDENTIALS = "SELECT P_EMAIL, P_USERNAME FROM db_profile WHERE P_EMAIL = ? OR P_USERNAME = ?";
-    private final String SQLSELECT_LOGIN = "SELECT p.P_ID, p.P_EMAIL, p.P_USERNAME, p.P_PASSWORD, p.P_NAME, p.P_LASTNAME, p.P_TELEPHONE, u.U_GENDER, u.U_CARD, a.A_CURRENT_ACCOUNT FROM db_profile p LEFT JOIN db_user u ON p.P_ID = u.U_ID LEFT JOIN db_admin a ON p.P_ID = a.A_ID WHERE (p.P_EMAIL = ? OR p.P_USERNAME = ?) AND p.P_PASSWORD = ?";
-
-    /**
-     * SQL Queries: UPDATES
-     */
-    private final String SQLUPDATE_PROFILE = "UPDATE db_profile SET P_PASSWORD = ?, P_NAME = ?, P_LASTNAME = ?, P_TELEPHONE = ? WHERE P_ID = ?";
-    private final String SQLUPDATE_USER = "UPDATE db_user SET U_GENDER = ?, U_CARD = ? WHERE U_ID = ?";
-
-    /**
-     * SQL Queries: DELETES
-     */
-    private final String SQLDELETE_USER = "DELETE FROM db_profile WHERE P_ID = ?";
-
     /**
      * Inserts a new user into the database with transaction support. This method performs an atomic operation that inserts user data into both the profile and user tables within a single transaction. If any part fails, the entire transaction is rolled back.
      *
-     * @param con the database connection to use for the operation
      * @param user the User object containing all user data to be inserted
      * @return the generated user ID if insertion is successful, -1 otherwise
      * @throws OurException if the insertion fails due to SQL errors, constraint violations, or transaction issues
@@ -94,52 +67,47 @@ public class DBImplementation implements ModelDAO
     /**
      * Retrieves all users from the database. This method executes a query to fetch all user records with their complete profile information including personal details and preferences.
      *
-     * @param con the database connection to use for the operation
+     * @param collection from database to make the queries on it
      * @return an ArrayList containing all User objects from the database
      * @throws OurException if the query execution fails or data retrieval errors occur
      */
-    private ArrayList<User> selectUsers(Connection con) throws OurException
+    private ArrayList<User> selectUsers(MongoCollection<Document> collection) throws OurException
     {
         ArrayList<User> users = new ArrayList<>();
 
-        try (
-                PreparedStatement stmt = con.prepareStatement(SQLSELECT_USERS);
-                ResultSet rs = stmt.executeQuery())
+        for (Document doc : collection.find(Filters.exists("U_GENDER")))
         {
-            while (rs.next())
-            {
-                String genderValue = rs.getString("U_GENDER");
-                Gender gender = genderValue != null ? Gender.valueOf(genderValue) : Gender.OTHER;
-                User user = new User(
-                        rs.getString("P_ID"),
-                        rs.getString("P_EMAIL"),
-                        rs.getString("P_USERNAME"),
-                        rs.getString("P_PASSWORD"),
-                        rs.getString("P_NAME"),
-                        rs.getString("P_LASTNAME"),
-                        rs.getString("P_TELEPHONE"),
-                        gender,
-                        rs.getString("U_CARD")
-                );
-                users.add(user);
-            }
+            String genderValue = doc.getString("U_GENDER");
+            Gender gender = genderValue != null ? Gender.valueOf(genderValue) : Gender.OTHER;
+
+            User user = new User(
+                    doc.getObjectId("_id").toHexString(),
+                    doc.getString("P_EMAIL"),
+                    doc.getString("P_USERNAME"),
+                    doc.getString("P_PASSWORD"),
+                    doc.getString("P_NAME"),
+                    doc.getString("P_LASTNAME"),
+                    doc.getString("P_TELEPHONE"),
+                    gender,
+                    doc.getString("U_CARD")
+            );
+
+            users.add(user);
         }
-        catch (SQLException ex)
-        {
-            throw new OurException(ErrorMessages.GET_USERS);
-        }
+
         return users;
     }
 
     /**
      * Updates an existing user's information in the database with transaction support. This method performs an atomic operation that updates user data in both the profile and user tables within a single transaction.
      *
-     * @param con the database connection to use for the operation
+     * @param collection from database to make the queries on it
      * @param user the User object containing updated user data
      * @return true if the update operation was successful, false otherwise
      * @throws OurException if the update fails due to SQL errors, constraint violations, or transaction issues
      */
-    private boolean update(User user, MongoCollection<Document> collection) throws OurException {
+    private boolean update(User user, MongoCollection<Document> collection) throws OurException 
+    {
 
         Document filter = new Document("_id", new ObjectId(user.getId()));
 
@@ -166,28 +134,21 @@ public class DBImplementation implements ModelDAO
     /**
      * Deletes a user from the database by their unique identifier. This method removes a user record from the system based on the provided user ID.
      *
-     * @param con the database connection to use for the operation
+     * @param collection from database to make the queries on it
      * @param userId the unique identifier of the user to be deleted
      * @return true if the deletion was successful, false if no user was found with the specified ID
      * @throws OurException if the deletion operation fails due to SQL errors or database constraints
      */
-    private boolean delete(Connection con, String userId) throws OurException
+    private DeleteResult delete(MongoCollection<Document> collection, String userId) throws OurException
     {
-        try (PreparedStatement stmt = con.prepareStatement(SQLDELETE_USER))
-        {
-            stmt.setString(1, userId);
-            return stmt.executeUpdate() > 0;
-        }
-        catch (SQLException ex)
-        {
-            throw new OurException(ErrorMessages.DELETE_USER);
-        }
+        ObjectId objectId = new ObjectId(userId);
+        
+        return collection.deleteOne(Filters.eq("_id", objectId));
     }
 
     /**
      * Authenticates a user by verifying credentials against the database. This method checks if the provided credential (email or username) and password match an existing user record and returns the appropriate profile type (User or Admin) upon successful authentication.
      *
-     * @param con the database connection to use for the operation
      * @param credential the user's email or username for identification
      * @param password the user's password for authentication
      * @return the authenticated user's Profile object (User or Admin) if credentials are valid, null otherwise
@@ -252,7 +213,6 @@ public class DBImplementation implements ModelDAO
     /**
      * Checks if the provided email or username already exists in the database. This method verifies the uniqueness of user credentials during registration to prevent duplicate accounts.
      *
-     * @param con the database connection to use for the operation
      * @param email the email address to check for existence
      * @param username the username to check for existence
      * @return a HashMap indicating which credentials already exist with keys "email" and "username" and boolean values
@@ -292,7 +252,7 @@ public class DBImplementation implements ModelDAO
      * @throws InterruptedException if the waiting thread is interrupted
      * @throws OurException if the connection timeout is exceeded
      */
-    private Connection waitForConnection(ConnectionThread thread) throws InterruptedException, OurException
+    private Connection waitForConnection(ConnectionThread thread) throws InterruptedException, OurException  /*BORRAR*/
     {
         int attempts = 0;
 
@@ -316,7 +276,7 @@ public class DBImplementation implements ModelDAO
      * @param con the database connection to roll back the transaction on
      * @throws OurException if the rollback operation fails
      */
-    private void rollBack(Connection con) throws OurException
+    private void rollBack(Connection con) throws OurException  /*BORRAR*/
     {
         try
         {
@@ -337,7 +297,7 @@ public class DBImplementation implements ModelDAO
      * @param con the database connection to reset
      * @throws OurException if resetting auto-commit fails
      */
-    private void resetAutoCommit(Connection con) throws OurException
+    private void resetAutoCommit(Connection con) throws OurException  /*BORRAR*/
     {
         try
         {
@@ -374,7 +334,7 @@ public class DBImplementation implements ModelDAO
     }
 
     /**
-     * Registers a new user in the system with duplicate credential checking. This method validates credential uniqueness, creates a new user account, and returns the registered user with their system-generated identifier.
+     * Registers a new user in the system with duplicate credential checking. This method validates credential uniqueness, creates a new user account, and returns the registered user with their identifier.
      *
      * @param user the User object containing all registration information
      * @return the registered User object with the generated ID and system-assigned values
@@ -416,31 +376,11 @@ public class DBImplementation implements ModelDAO
         try
         {
             MongoCollection<Document> collection = MongoConnection.getUsersCollection();
-            ArrayList<User> users = new ArrayList<>();
-
-            for (Document doc : collection.find(Filters.exists("U_GENDER")))
-            {
-                String genderValue = doc.getString("U_GENDER");
-                Gender gender = genderValue != null ? Gender.valueOf(genderValue) : Gender.OTHER;
-
-                User user = new User(
-                        doc.getObjectId("_id").toHexString(),
-                        doc.getString("P_EMAIL"),
-                        doc.getString("P_USERNAME"),
-                        doc.getString("P_PASSWORD"),
-                        doc.getString("P_NAME"),
-                        doc.getString("P_LASTNAME"),
-                        doc.getString("P_TELEPHONE"),
-                        gender,
-                        doc.getString("U_CARD")
-                );
-
-                users.add(user);
-            }
+            ArrayList<User> users = selectUsers(collection);
 
             return users;
         }
-        catch (Exception ex)
+        catch (OurException ex)
         {
             throw new OurException(ErrorMessages.GET_USERS);
         }
@@ -454,7 +394,8 @@ public class DBImplementation implements ModelDAO
      * @throws OurException if the update operation fails due to validation errors, database constraints violations, or data access issues
      */
     @Override
-    public boolean updateUser(User user) throws OurException {
+    public boolean updateUser(User user) throws OurException 
+    {
         try {
             MongoCollection<Document> collection = MongoConnection.getUsersCollection();
             return update(user, collection);
@@ -472,22 +413,20 @@ public class DBImplementation implements ModelDAO
      * @throws OurException if the deletion operation fails due to database constraints, referential integrity issues, or data access errors
      */
     @Override
-    public boolean deleteUser(String id) throws OurException
-    {
-        ConnectionThread thread = new ConnectionThread(delay);
-        thread.start();
+    public boolean deleteUser(String id) throws OurException {
+        try {
+            MongoCollection<Document> collection = MongoConnection.getUsersCollection();
+            
+            DeleteResult resultt = delete(collection, id);
 
-        try
-        {
-            Connection con = waitForConnection(thread);
-            return delete(con, id);
+            return resultt.getDeletedCount() > 0;
         }
-        catch (InterruptedException ex)
-        {
+        catch (IllegalArgumentException ex) {
+            // id no válido (no es ObjectId)
             throw new OurException(ErrorMessages.DELETE_USER);
-        } finally
-        {
-            thread.releaseConnection();
+        }
+        catch (MongoException ex) {
+            throw new OurException(ErrorMessages.DELETE_USER);
         }
     }
 }
