@@ -18,7 +18,7 @@ public class AdminTest
     @Before
     public void setUp()
     {
-        adminWithId = new Admin(1, "admin@test.com", "adminUser", "password123",
+        adminWithId = new Admin("1", "admin@test.com", "adminUser", "password123",
                 "John", "Doe", "123456789", "1234567890123456");
 
         adminWithoutId = new Admin("admin2@test.com", "adminUser2", "password456",
@@ -31,7 +31,7 @@ public class AdminTest
     @Test
     public void testConstructorWithId()
     {
-        assertEquals(1, adminWithId.getId());
+        assertEquals("1", adminWithId.getId());
         assertEquals("admin@test.com", adminWithId.getEmail());
         assertEquals("adminUser", adminWithId.getUsername());
         assertEquals("password123", adminWithId.getPassword());
@@ -47,7 +47,7 @@ public class AdminTest
     @Test
     public void testConstructorWithoutId()
     {
-        assertEquals(-1, adminWithoutId.getId());
+        assertEquals("", adminWithoutId.getId());
         assertEquals("admin2@test.com", adminWithoutId.getEmail());
         assertEquals("adminUser2", adminWithoutId.getUsername());
         assertEquals("password456", adminWithoutId.getPassword());
@@ -107,7 +107,7 @@ public class AdminTest
     @Test
     public void testShowWithNullCurrentAccount()
     {
-        Admin adminWithNullAccount = new Admin(2, "nulladmin@test.com", "nulladmin", "pass",
+        Admin adminWithNullAccount = new Admin("2", "nulladmin@test.com", "nulladmin", "pass",
                 "Null", "Admin", "444444444", null);
 
         String result = adminWithNullAccount.show();
@@ -132,9 +132,9 @@ public class AdminTest
     @Test
     public void testCurrentAccountMaskingWithDifferentAccounts()
     {
-        Admin admin1 = new Admin(3, "test1@test.com", "admin1", "pass",
+        Admin admin1 = new Admin("3", "test1@test.com", "admin1", "pass",
                 "Test1", "Admin1", "111111111", "1111222233334444");
-        Admin admin2 = new Admin(4, "test2@test.com", "admin2", "pass",
+        Admin admin2 = new Admin("4", "test2@test.com", "admin2", "pass",
                 "Test2", "Admin2", "222222222", "9999888877776666");
 
         String result1 = admin1.show();

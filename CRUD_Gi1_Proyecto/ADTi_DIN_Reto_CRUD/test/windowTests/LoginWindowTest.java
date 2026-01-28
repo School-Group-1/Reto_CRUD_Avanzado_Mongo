@@ -68,9 +68,9 @@ public class LoginWindowTest extends ApplicationTest
         mockDAO = new MockModelDAO();
         realController = new Controller(mockDAO);
 
-        mockUser = new User(1, "user@test.com", "testuser", "password123",
+        mockUser = new User("1", "user@test.com", "testuser", "password123",
                 "Test", "User", "123456789", Gender.MALE, "1234567890123456");
-        mockAdmin = new User(1, "admin@test.com", "adminuser", "password123",
+        mockAdmin = new User("1", "admin@test.com", "adminuser", "password123",
                 "Admin", "User", "123456789", Gender.MALE, "1234567890123456");
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/LoginWindow.fxml"));

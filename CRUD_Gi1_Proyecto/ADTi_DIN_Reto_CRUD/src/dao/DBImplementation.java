@@ -20,7 +20,6 @@ import model.Profile;
 import model.User;
 import org.bson.Document;
 import org.bson.types.ObjectId;
-import pool.ConnectionThread;
 
 /**
  * Database implementation of the ModelDAO interface. This class provides the concrete implementation for all data access operations including user registration, authentication, profile management, and administrative functions. It handles database connections, SQL execution, transaction management, and error handling for the entire application data layer.
@@ -241,74 +240,6 @@ public class DBImplementation implements ModelDAO
 
         } catch (Exception ex) {
             throw new OurException(ErrorMessages.VERIFY_CREDENTIALS);
-        }
-    }
-
-    /**
-     * Waits for a database connection to become available with timeout protection. This method implements a polling mechanism to wait for a connection thread to become ready, preventing indefinite blocking.
-     *
-     * @param thread the ConnectionThread instance to wait for
-     * @return the established database connection
-     * @throws InterruptedException if the waiting thread is interrupted
-     * @throws OurException if the connection timeout is exceeded
-     */
-    private Connection waitForConnection(ConnectionThread thread) throws InterruptedException, OurException  /*BORRAR*/
-    {
-        int attempts = 0;
-
-        while (!thread.isReady() && attempts < 50)
-        {
-            Thread.sleep(10);
-            attempts++;
-        }
-
-        if (!thread.isReady())
-        {
-            throw new OurException(ErrorMessages.TIMEOUT);
-        }
-
-        return thread.getConnection();
-    }
-
-    /**
-     * Rolls back the current database transaction. This method provides safe transaction rollback with proper error handling for scenarios where database operations fail.
-     *
-     * @param con the database connection to roll back the transaction on
-     * @throws OurException if the rollback operation fails
-     */
-    private void rollBack(Connection con) throws OurException  /*BORRAR*/
-    {
-        try
-        {
-            if (con != null)
-            {
-                con.rollback();
-            }
-        }
-        catch (SQLException ex)
-        {
-            throw new OurException(ErrorMessages.ROLLBACK);
-        }
-    }
-
-    /**
-     * Resets the auto-commit mode of the database connection to true. This method ensures that the connection returns to its default auto-commit state after transaction operations are completed.
-     *
-     * @param con the database connection to reset
-     * @throws OurException if resetting auto-commit fails
-     */
-    private void resetAutoCommit(Connection con) throws OurException  /*BORRAR*/
-    {
-        try
-        {
-            if (con != null)
-            {
-                con.setAutoCommit(true);
-            }
-        }
-        catch (SQLException ex)
-        {
-            throw new OurException(ErrorMessages.RESET_AUTOCOMMIT);
         }
     }
 

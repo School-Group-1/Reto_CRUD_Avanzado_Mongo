@@ -20,13 +20,13 @@ public class UserTest
     @Before
     public void setUp()
     {
-        userWithId = new User(1, "user@test.com", "user123", "password123",
+        userWithId = new User("1", "user@test.com", "user123", "password123",
                 "John", "Doe", "123456789", Gender.MALE, "1234567890123456");
 
         userWithoutId = new User("user2@test.com", "user456", "password456",
                 "Jane", "Smith", "987654321", Gender.FEMALE, "9876543210987654");
 
-        userWithOtherGender = new User(3, "other@test.com", "otheruser", "pass123",
+        userWithOtherGender = new User("3", "other@test.com", "otheruser", "pass123",
                 "Alex", "Taylor", "555555555", Gender.OTHER, "1111222233334444");
     }
 
@@ -36,7 +36,7 @@ public class UserTest
     @Test
     public void testConstructorWithId()
     {
-        assertEquals(1, userWithId.getId());
+        assertEquals("1", userWithId.getId());
         assertEquals("user@test.com", userWithId.getEmail());
         assertEquals("user123", userWithId.getUsername());
         assertEquals("password123", userWithId.getPassword());
@@ -53,7 +53,7 @@ public class UserTest
     @Test
     public void testConstructorWithoutId()
     {
-        assertEquals(-1, userWithoutId.getId());
+        assertEquals("", userWithoutId.getId());
         assertEquals("user2@test.com", userWithoutId.getEmail());
         assertEquals("user456", userWithoutId.getUsername());
         assertEquals("password456", userWithoutId.getPassword());
@@ -164,7 +164,7 @@ public class UserTest
     @Test
     public void testShowWithNullCard()
     {
-        User userWithNullCard = new User(4, "nullcard@test.com", "nulluser", "pass",
+        User userWithNullCard = new User("4", "nullcard@test.com", "nulluser", "pass",
                 "Null", "Card", "444444444", Gender.FEMALE, null);
 
         String result = userWithNullCard.show();

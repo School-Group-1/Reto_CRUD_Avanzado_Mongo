@@ -21,7 +21,7 @@ public class LoggedProfileTest
     @Before
     public void setUp()
     {
-        testProfile = new Admin(1, "test@email.com", "testuser", "password",
+        testProfile = new Admin("1", "test@email.com", "testuser", "password",
                 "Test", "User", "123456789", "1234567890123456");
         LoggedProfile.getInstance().clear();
     }
@@ -89,9 +89,9 @@ public class LoggedProfileTest
     {
         LoggedProfile loggedProfile = LoggedProfile.getInstance();
 
-        Profile profile1 = new Admin(1, "test1@email.com", "user1", "pass1",
+        Profile profile1 = new Admin("1", "test1@email.com", "user1", "pass1",
                 "Name1", "Last1", "111111111", "1111111111111111");
-        Profile profile2 = new Admin(2, "test2@email.com", "user2", "pass2",
+        Profile profile2 = new Admin("2", "test2@email.com", "user2", "pass2",
                 "Name2", "Last2", "222222222", "2222222222222222");
 
         loggedProfile.setProfile(profile1);

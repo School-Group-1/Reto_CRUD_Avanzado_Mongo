@@ -63,7 +63,7 @@ public class SignUpWindowTest extends ApplicationTest
         mockDAO = new MockModelDAO();
         realController = new Controller(mockDAO);
 
-        mockUser = new User(1, "test@example.com", "testuser", "Password123",
+        mockUser = new User("1", "test@example.com", "testuser", "Password123",
                 "John", "Doe", "123456789", Gender.MALE, "1234567890123456");
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/SignUpWindow.fxml"));

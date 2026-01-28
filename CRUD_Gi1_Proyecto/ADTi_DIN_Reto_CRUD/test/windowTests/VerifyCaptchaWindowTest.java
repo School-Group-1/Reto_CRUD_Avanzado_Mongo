@@ -60,7 +60,7 @@ public class VerifyCaptchaWindowTest extends ApplicationTest
         mockDAO = new MockModelDAO();
         realController = new Controller(mockDAO);
 
-        mockUser = new User(1, "test@example.com", "testuser", "Password123",
+        mockUser = new User("1", "test@example.com", "testuser", "Password123",
                 "John", "Doe", "123456789", Gender.MALE, "1234567890123456");
 
         LoggedProfile.getInstance().setProfile(mockUser);
@@ -69,7 +69,7 @@ public class VerifyCaptchaWindowTest extends ApplicationTest
         Parent root = loader.load();
         captchaController = loader.getController();
 
-        captchaController.setController(realController, -1);
+        captchaController.setController(realController, "");
 
         stage.setScene(new Scene(root));
         stage.show();

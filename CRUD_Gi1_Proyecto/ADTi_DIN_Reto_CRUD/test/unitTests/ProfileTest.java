@@ -19,7 +19,7 @@ public class ProfileTest
             super();
         }
 
-        public TestProfile(int id, String email, String username, String password,
+        public TestProfile(String id, String email, String username, String password,
                 String name, String lastname, String telephone)
         {
             super(id, email, username, password, name, lastname, telephone);
@@ -46,7 +46,7 @@ public class ProfileTest
     public void setUp()
     {
         defaultProfile = new TestProfile();
-        profileWithId = new TestProfile(1, "test@email.com", "testuser",
+        profileWithId = new TestProfile("1", "test@email.com", "testuser",
                 "password123", "John", "Doe", "123456789");
         profileWithoutId = new TestProfile("test@email.com", "testuser",
                 "password123", "John", "Doe", "123456789");
@@ -58,7 +58,7 @@ public class ProfileTest
     @Test
     public void testDefaultConstructor()
     {
-        assertEquals(-1, defaultProfile.getId());
+        assertEquals("", defaultProfile.getId());
         assertEquals("", defaultProfile.getEmail());
         assertEquals("", defaultProfile.getUsername());
         assertEquals("", defaultProfile.getPassword());
@@ -73,7 +73,7 @@ public class ProfileTest
     @Test
     public void testConstructorWithId()
     {
-        assertEquals(1, profileWithId.getId());
+        assertEquals("1", profileWithId.getId());
         assertEquals("test@email.com", profileWithId.getEmail());
         assertEquals("testuser", profileWithId.getUsername());
         assertEquals("password123", profileWithId.getPassword());
@@ -88,7 +88,7 @@ public class ProfileTest
     @Test
     public void testConstructorWithoutId()
     {
-        assertEquals(-1, profileWithoutId.getId());
+        assertEquals("", profileWithoutId.getId());
         assertEquals("test@email.com", profileWithoutId.getEmail());
         assertEquals("testuser", profileWithoutId.getUsername());
         assertEquals("password123", profileWithoutId.getPassword());
@@ -103,8 +103,8 @@ public class ProfileTest
     @Test
     public void testSetAndGetId()
     {
-        defaultProfile.setId(5);
-        assertEquals(5, defaultProfile.getId());
+        defaultProfile.setId("5");
+        assertEquals("5", defaultProfile.getId());
     }
 
     /**
@@ -200,13 +200,13 @@ public class ProfileTest
     public void testMultipleSetters()
     {
         TestProfile profile = new TestProfile();
-        profile.setId(10);
+        profile.setId("10");
         profile.setEmail("multi@test.com");
         profile.setUsername("multiuser");
         profile.setName("Multi");
         profile.setLastname("Test");
 
-        assertEquals(10, profile.getId());
+        assertEquals("10", profile.getId());
         assertEquals("multi@test.com", profile.getEmail());
         assertEquals("multiuser", profile.getUsername());
         assertEquals("Multi", profile.getName());

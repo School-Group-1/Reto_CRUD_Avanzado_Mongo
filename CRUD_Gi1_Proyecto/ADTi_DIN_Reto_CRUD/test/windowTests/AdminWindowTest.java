@@ -58,7 +58,7 @@ public class AdminWindowTest extends ApplicationTest
         mockDAO = new MockModelDAO();
         realController = new Controller(mockDAO);
 
-        mockAdmin = new Admin(1, "admin@example.com", "admin", "Admin123", "Admin", "User", "123456789", "1234567890123456");
+        mockAdmin = new Admin("1", "admin@example.com", "admin", "Admin123", "Admin", "User", "123456789", "1234567890123456");
         LoggedProfile.getInstance().setProfile(mockAdmin);
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AdminWindow.fxml"));
@@ -273,7 +273,7 @@ public class AdminWindowTest extends ApplicationTest
     public void testDeleteUserWithSelectedUserShowsTitle()
     {
         LoggedProfile.getInstance().setProfile(new Admin(
-                1, "admin@example.com", "admin", "Admin123",
+                "1", "admin@example.com", "admin", "Admin123",
                 "Admin", "User", "123456789", "1234567890123456"
         ));
 

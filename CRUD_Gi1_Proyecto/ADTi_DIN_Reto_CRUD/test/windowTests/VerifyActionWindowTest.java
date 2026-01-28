@@ -66,7 +66,7 @@ public class VerifyActionWindowTest extends ApplicationTest
         mockDAO = new MockModelDAO();
         realController = new Controller(mockDAO);
 
-        mockUser = new User(1, "test@example.com", "testuser", "Password123",
+        mockUser = new User("1", "test@example.com", "testuser", "Password123",
                 "John", "Doe", "123456789", Gender.MALE, "1234567890123456");
 
         LoggedProfile.getInstance().setProfile(mockUser);
@@ -76,7 +76,7 @@ public class VerifyActionWindowTest extends ApplicationTest
         Parent root = loader.load();
         verifyActionController = loader.getController();
 
-        verifyActionController.setController(realController, 1);
+        verifyActionController.setController(realController, "1");
         verifyActionController.setOnUserDeletedCallback(() -> callbackExecuted = true);
 
         stage.setScene(new Scene(root));

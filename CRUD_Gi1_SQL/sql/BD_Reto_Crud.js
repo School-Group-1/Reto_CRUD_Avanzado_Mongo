@@ -1,5 +1,5 @@
 // Seleccionar / crear la base de datos
-use users_manager;
+use users_manager
 
 // Insertar documentos (crea la colección "users")
 db.users.insertMany([
@@ -42,8 +42,8 @@ db.users.insertMany([
     U_GENDER: "OTHER",
     U_CARD: "4305332143214321"
   }
-]);
+])
 
 // Creación de índices UNIQUE (obligatorio antes de usar la app)
-db.users.createIndex({ P_EMAIL: 1 }, { unique: true });
-db.users.createIndex({ P_USERNAME: 1 }, { unique: true });
+db.users.createIndex({ P_EMAIL: 1 }, { unique: true })
+db.users.createIndex({ P_USERNAME: 1 }, { unique: true })

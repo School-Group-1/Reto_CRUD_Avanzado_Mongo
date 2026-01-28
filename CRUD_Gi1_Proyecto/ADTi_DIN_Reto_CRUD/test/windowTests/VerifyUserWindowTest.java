@@ -62,7 +62,7 @@ public class VerifyUserWindowTest extends ApplicationTest
         mockDAO = new MockModelDAO();
         realController = new Controller(mockDAO);
 
-        mockUser = new User(1, "test@example.com", "testuser", "Password123",
+        mockUser = new User("1", "test@example.com", "testuser", "Password123",
                 "John", "Doe", "123456789", Gender.MALE, "1234567890123456");
 
         LoggedProfile.getInstance().setProfile(mockUser);
@@ -71,7 +71,7 @@ public class VerifyUserWindowTest extends ApplicationTest
         Parent root = loader.load();
         verifyController = loader.getController();
 
-        verifyController.setController(realController, -1);
+        verifyController.setController(realController, "");
 
         stage.setScene(new Scene(root));
         stage.show();

@@ -59,7 +59,7 @@ public class UserWindowTest extends ApplicationTest
         realController = new Controller(mockDAO);
 
         mockUser = new User(
-                1,
+                "1",
                 "user@example.com",
                 "testuser",
                 "Password123",
@@ -173,7 +173,7 @@ public class UserWindowTest extends ApplicationTest
     public void testDeleteUserOpensVerifyWindow()
     {
         LoggedProfile.getInstance().setProfile(new User(
-                1,
+                "1",
                 "user@example.com",
                 "testuser",
                 "Password123",

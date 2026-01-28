@@ -5,6 +5,8 @@
  */
 package config;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -16,7 +18,16 @@ public class MongoConnection {
     private static final String URI = "mongodb://localhost:27017";
     private static final String DB_NAME = "users_manager";
 
-    private static final MongoClient client = MongoClients.create(URI);
+    private static final MongoClient client = MongoClients.create(
+        MongoClientSettings.builder()
+            .applyConnectionString(new ConnectionString(URI))
+            .applyToConnectionPoolSettings(builder -> {
+                builder.minSize(2);
+                builder.maxSize(5);
+            })
+            .build()
+    );
+    
     private static final MongoDatabase database = client.getDatabase(DB_NAME);
 
     public static MongoCollection<Document> getUsersCollection() {

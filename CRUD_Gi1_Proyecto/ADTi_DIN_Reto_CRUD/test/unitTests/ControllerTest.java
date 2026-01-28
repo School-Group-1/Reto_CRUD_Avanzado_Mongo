@@ -46,7 +46,7 @@ public class ControllerTest
         User result = controller.register(testUser);
 
         assertNotNull(result);
-        assertEquals(1, result.getId());
+        assertEquals("1", result.getId());
         assertEquals("test@test.com", result.getEmail());
         assertEquals("testuser", result.getUsername());
     }
@@ -90,7 +90,7 @@ public class ControllerTest
     @Test
     public void testUpdateUser() throws OurException
     {
-        User userToUpdate = new User(1, "updated@test.com", "updateduser", "newpass",
+        User userToUpdate = new User("1", "updated@test.com", "updateduser", "newpass",
                 "Updated", "Name", "111111111", Gender.MALE, "1234567890123456");
 
         boolean result = controller.updateUser(userToUpdate);
@@ -105,10 +105,10 @@ public class ControllerTest
     @Test
     public void testDeleteUser() throws OurException
     {
-        boolean result = controller.deleteUser(1);
+        boolean result = controller.deleteUser("1");
         assertTrue(result);
 
-        boolean result2 = controller.deleteUser(0);
+        boolean result2 = controller.deleteUser("");
         assertFalse(result2);
     }
 
