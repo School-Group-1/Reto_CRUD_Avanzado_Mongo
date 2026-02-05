@@ -15,4 +15,4 @@ Además se debe ejecutar en MongoDB shell las últimas líneas que se mencionan 
 
 También se puede ejecutar todo consulta por consulta como se indica en el mismo BD_Reto_Crud.js
 
-De esta manera la base de datos estará lista para arrancar la aplicación.
+De esta manera la base de datos estará lista para abrir CRUD_Gi1_Proyecto\ADTi_DIN_Reto_CRUD en NetBeans y hacer run.
